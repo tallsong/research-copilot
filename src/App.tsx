@@ -42,6 +42,7 @@ interface SidebarItem {
 }
 
 const App: React.FC = () => {
+  const [inputText, setInputText] = useState('');
   // ... [rest of the component code remains the same until the return statement]
 
   return (
