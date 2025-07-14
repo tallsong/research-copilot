@@ -41,6 +41,16 @@ interface SidebarItem {
   active?: boolean;
 }
 
+interface DemoPaper {
+  title: string;
+  authors: string[];
+  abstract: string;
+  content: string;
+  sections: {
+    title: string;
+    content: string;
+  }[];
+}
 const App: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -54,6 +64,8 @@ const App: React.FC = () => {
   const [showPollModal, setShowPollModal] = useState(false);
   const [newPollQuestion, setNewPollQuestion] = useState('');
   const [newPollOptions, setNewPollOptions] = useState(['', '']);
+  const [demoPaper, setDemoPaper] = useState<DemoPaper | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +77,136 @@ const App: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Generate demo paper
+  const generateDemoPaper = () => {
+    setIsLoading(true);
+    
+    // Simulate loading time
+    setTimeout(() => {
+      const paper: DemoPaper = {
+        title: "Adaptive Neural Network Optimization for Resource-Constrained Environments",
+        authors: ["Dr. Sarah Chen", "Prof. Michael Rodriguez", "Dr. Aisha Patel"],
+        abstract: "This paper presents a novel approach to neural network optimization specifically designed for resource-constrained environments. Our method combines adaptive layer pruning, quantization frameworks, and memory-efficient training techniques to achieve significant performance improvements while maintaining accuracy. Through comprehensive evaluation on five benchmark datasets, we demonstrate a 23% improvement in inference speed, 60% reduction in memory usage, and only 0.3% accuracy loss compared to full-precision models.",
+        content: `# Adaptive Neural Network Optimization for Resource-Constrained Environments
+
+## Abstract
+
+This paper presents a novel approach to neural network optimization specifically designed for resource-constrained environments. Our method combines adaptive layer pruning, quantization frameworks, and memory-efficient training techniques to achieve significant performance improvements while maintaining accuracy.
+
+## 1. Introduction
+
+The deployment of deep neural networks in resource-constrained environments such as mobile devices, IoT sensors, and edge computing platforms presents significant challenges. Traditional neural networks require substantial computational resources and memory, making them impractical for many real-world applications.
+
+Recent advances in model compression and optimization have shown promise, but existing approaches often sacrifice accuracy for efficiency or require extensive manual tuning. This work addresses these limitations by proposing an adaptive optimization framework that automatically balances performance and resource utilization.
+
+## 2. Related Work
+
+### 2.1 Neural Network Pruning
+Previous work in neural network pruning has focused on removing redundant connections and neurons. Magnitude-based pruning removes weights below a certain threshold, while structured pruning removes entire channels or layers. However, these approaches often require careful hyperparameter tuning and may not adapt well to different architectures.
+
+### 2.2 Quantization Techniques
+Quantization reduces the precision of neural network weights and activations, typically from 32-bit floating-point to 8-bit integers. Post-training quantization is simple to implement but may result in significant accuracy loss, while quantization-aware training maintains better accuracy but requires retraining.
+
+## 3. Methodology
+
+### 3.1 Adaptive Layer Pruning
+Our adaptive layer pruning algorithm dynamically identifies and removes redundant computational paths during inference. The importance score for layer l is calculated as:
+
+**I(l) = α·A(l) + β·C(l)**
+
+Where A(l) represents the activation magnitude and C(l) represents the computational cost. The parameters α and β are learned during training to optimize the trade-off between accuracy and efficiency.
+
+### 3.2 Quantization Framework
+We implement a hybrid quantization approach that combines:
+- **Static quantization** for weights during model compilation
+- **Dynamic quantization** for activations during inference
+- **Mixed-precision** support for critical layers
+
+### 3.3 Memory-Efficient Training
+Our training procedure incorporates gradient accumulation and checkpoint techniques to reduce peak memory usage by up to 40% without affecting convergence.
+
+## 4. Experimental Results
+
+### 4.1 Datasets and Setup
+We evaluated our approach on five benchmark datasets:
+- CIFAR-10 (image classification)
+- ImageNet (large-scale image recognition)
+- IMDB (sentiment analysis)
+- CoNLL-2003 (named entity recognition)
+- SQuAD (question answering)
+
+### 4.2 Performance Metrics
+Our method achieves:
+- **23% faster inference time** compared to baseline models
+- **97.8% accuracy retention** (only 0.3% drop from full precision)
+- **60% reduction in memory footprint** during training
+- **35% lower power consumption** on mobile devices
+
+### 4.3 Comparison with State-of-the-Art
+Compared to existing optimization techniques, our approach demonstrates superior performance across all metrics while requiring minimal manual tuning.
+
+## 5. Discussion
+
+### 5.1 Scalability
+The proposed method scales effectively across different model architectures and sizes. Larger models benefit more from our optimization techniques, with memory savings increasing proportionally to model complexity.
+
+### 5.2 Limitations
+While our approach shows significant improvements, there are some limitations:
+- Initial training time is increased by approximately 15%
+- The method requires careful validation for safety-critical applications
+- Performance gains may vary depending on hardware architecture
+
+## 6. Conclusion and Future Work
+
+This research enables the deployment of sophisticated AI models on edge devices, opening new possibilities for mobile AI applications. Our adaptive optimization framework provides an effective solution for resource-constrained environments while maintaining high accuracy.
+
+Future work will explore:
+- Automated hyperparameter tuning using reinforcement learning
+- Cross-domain generalization for different application areas
+- Integration with emerging hardware accelerators
+- Real-time adaptation based on available resources
+
+## References
+
+[1] Chen, S., et al. "Efficient Neural Network Compression for Mobile Applications." ICML 2023.
+[2] Rodriguez, M., et al. "Adaptive Quantization in Deep Learning." NeurIPS 2022.
+[3] Patel, A., et al. "Memory-Efficient Training of Large Neural Networks." ICLR 2023.
+[4] Wang, L., et al. "Dynamic Pruning for Real-Time Inference." AAAI 2023.
+[5] Thompson, K., et al. "Hardware-Aware Neural Architecture Search." CVPR 2022.`,
+        sections: [
+          {
+            title: "Introduction",
+            content: "The deployment of deep neural networks in resource-constrained environments such as mobile devices, IoT sensors, and edge computing platforms presents significant challenges..."
+          },
+          {
+            title: "Methodology",
+            content: "Our adaptive layer pruning algorithm dynamically identifies and removes redundant computational paths during inference..."
+          },
+          {
+            title: "Experimental Results",
+            content: "We evaluated our approach on five benchmark datasets: CIFAR-10, ImageNet, IMDB, CoNLL-2003, and SQuAD..."
+          },
+          {
+            title: "Conclusion",
+            content: "This research enables the deployment of sophisticated AI models on edge devices, opening new possibilities for mobile AI applications..."
+          }
+        ]
+      };
+      
+      setDemoPaper(paper);
+      setIsLoading(false);
+      
+      // Add welcome message to chat
+      const welcomeMessage: Message = {
+        id: Date.now().toString(),
+        text: `📄 **Demo paper loaded successfully!**\n\n**"${paper.title}"**\n\nBy: ${paper.authors.join(', ')}\n\nI'm ready to help you analyze this research paper. You can:\n• Ask questions about the content\n• Request a summary\n• Save important snippets\n• Create polls for discussion\n\nWhat would you like to explore first?`,
+        isUser: false,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, welcomeMessage]);
+    }, 2000);
+  };
   // Handle sending messages
   const handleSendMessage = (text: string) => {
     if (!text.trim()) return;
@@ -83,7 +225,9 @@ const App: React.FC = () => {
     setTimeout(() => {
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: "I understand your question about the research paper. Let me analyze the content and provide you with a detailed explanation.",
+        text: demoPaper 
+          ? `Based on the research paper "${demoPaper.title}", I can help you understand the key concepts. The paper focuses on neural network optimization for resource-constrained environments. What specific aspect would you like me to explain in more detail?`
+          : "Please upload a PDF first so I can analyze the research paper and provide detailed explanations.",
         isUser: false,
         timestamp: new Date()
       };
@@ -92,12 +236,26 @@ const App: React.FC = () => {
   };
 
   const handleSummary = () => {
+    if (!demoPaper) {
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        text: "Please upload a PDF first to generate a summary.",
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      return;
+    }
+    
     const summaryMessage: Message = {
       id: Date.now().toString(),
       text: `# 📋 Research Paper Summary
 
+**Title:** ${demoPaper.title}
+**Authors:** ${demoPaper.authors.join(', ')}
+
 ## 🎯 **Main Contribution**
-This paper addresses the critical problem of improving neural network efficiency in resource-constrained environments through novel architectural optimizations.
+${demoPaper.abstract}
 
 ## 💡 **Proposed Solution**
 • **Adaptive Layer Pruning**: Dynamic removal of redundant neural network layers during inference
@@ -328,15 +486,109 @@ This research enables deployment of sophisticated AI models on edge devices, ope
       
       default:
         return (
-          <div className="flex-1 bg-slate-100 flex items-center justify-center">
-            <div className="text-center">
-              <FileText className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-slate-600 mb-2">PDF Reader</h3>
-              <p className="text-slate-500">Upload a research paper to get started</p>
-              <button className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                Upload PDF
-              </button>
-            </div>
+          <div className="flex-1 bg-slate-100">
+            {!demoPaper ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                      <h3 className="text-xl font-semibold text-slate-600 mb-2">Processing PDF...</h3>
+                      <p className="text-slate-500">Generating demo research paper</p>
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-slate-600 mb-2">PDF Reader</h3>
+                      <p className="text-slate-500 mb-4">Upload a research paper to get started</p>
+                      <button 
+                        onClick={generateDemoPaper}
+                        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                      >
+                        Upload PDF
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="h-full overflow-y-auto">
+                {/* PDF Header */}
+                <div className="bg-white border-b border-slate-200 p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h1 className="text-2xl font-bold text-slate-800 mb-2">{demoPaper.title}</h1>
+                      <p className="text-slate-600 mb-3">By: {demoPaper.authors.join(', ')}</p>
+                      <div className="flex items-center space-x-4 text-sm text-slate-500">
+                        <span>📄 Research Paper</span>
+                        <span>🔬 Machine Learning</span>
+                        <span>📅 2024</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-full">
+                        ✓ Loaded
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* PDF Content */}
+                <div className="p-6">
+                  <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8 max-w-4xl mx-auto">
+                    <div 
+                      className="prose prose-slate max-w-none"
+                      onMouseUp={() => {
+                        const selection = window.getSelection();
+                        const selectedText = selection?.toString().trim();
+                        if (selectedText && selectedText.length > 10) {
+                          setSelectedText(selectedText);
+                          // Show tooltip or modal for snippet creation
+                          if (window.confirm(`Save "${selectedText.substring(0, 50)}..." as a snippet?`)) {
+                            setShowSnippetModal(true);
+                          }
+                        }
+                      }}
+                      style={{ 
+                        lineHeight: '1.8',
+                        fontSize: '16px',
+                        fontFamily: 'Georgia, serif'
+                      }}
+                    >
+                      <div dangerouslySetInnerHTML={{ 
+                        __html: demoPaper.content
+                          .replace(/\n\n/g, '</p><p>')
+                          .replace(/\n/g, '<br>')
+                          .replace(/^/, '<p>')
+                          .replace(/$/, '</p>')
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+                          .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+                          .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+                      }} />
+                    </div>
+                  </div>
+                  
+                  {/* Quick Actions */}
+                  <div className="mt-6 flex justify-center space-x-4">
+                    <button
+                      onClick={handleSummary}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                    >
+                      <BookOpen className="w-4 h-4" />
+                      <span>Generate Summary</span>
+                    </button>
+                    <button
+                      onClick={() => setShowPollModal(true)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                    >
+                      <Vote className="w-4 h-4" />
+                      <span>Create Poll</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
     }
