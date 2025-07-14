@@ -44,6 +44,32 @@ interface SidebarItem {
 const App: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Handle sending messages
+  const handleSendMessage = (text: string) => {
+    if (!text.trim()) return;
+    
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      text: text.trim(),
+      isUser: true,
+      timestamp: new Date()
+    };
+    
+    setMessages(prev => [...prev, newMessage]);
+    setInputText('');
+    
+    // Simulate AI response
+    setTimeout(() => {
+      const aiResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "I understand your question about the research paper. Let me analyze the content and provide you with a detailed explanation.",
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, aiResponse]);
+    }, 1000);
+  };
   // ... [rest of the component code remains the same until the return statement]
 
   return (
