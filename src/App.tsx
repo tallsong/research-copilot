@@ -557,14 +557,32 @@ This research enables deployment of sophisticated AI models on edge devices, ope
                     >
                       <div dangerouslySetInnerHTML={{ 
                         __html: demoPaper.content
-                          .replace(/\n\n/g, '</p><p>')
-                          .replace(/\n/g, '<br>')
-                          .replace(/^/, '<p>')
-                          .replace(/$/, '</p>')
-                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                          .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-                          .replace(/^## (.*$)/gm, '<h2>$1</h2>')
-                          .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+                          // First handle headers
+                          .replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold text-slate-800 mt-6 mb-3">$1</h3>')
+                          .replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold text-slate-800 mt-8 mb-4">$1</h2>')
+                          .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-slate-900 mt-8 mb-6">$1</h1>')
+                          // Handle bold text
+                          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-slate-800">$1</strong>')
+                          // Handle code blocks
+                          .replace(/`([^`]+)`/g, '<code class="bg-slate-100 px-2 py-1 rounded text-sm font-mono text-slate-700">$1</code>')
+                          // Handle bullet points
+                          .replace(/^- (.*$)/gm, '<li class="ml-4 mb-1">• $1</li>')
+                          // Handle numbered lists
+                          .replace(/^\d+\. (.*$)/gm, '<li class="ml-4 mb-1 list-decimal">$1</li>')
+                          // Handle paragraphs - split by double newlines first
+                          .split('\n\n')
+                          .map(paragraph => {
+                            // Skip if it's already a header or list item
+                            if (paragraph.includes('<h1') || paragraph.includes('<h2') || paragraph.includes('<h3') || 
+                                paragraph.includes('<li') || paragraph.trim() === '') {
+                              return paragraph;
+                            }
+                            // Wrap in paragraph tags
+                            return `<p class="mb-4 text-slate-700 leading-relaxed">${paragraph.replace(/\n/g, '<br>')}</p>`;
+                          })
+                          .join('')
+                          // Clean up any empty paragraphs
+                          .replace(/<p class="mb-4 text-slate-700 leading-relaxed"><\/p>/g, '')
                       }} />
                     </div>
                   </div>
