@@ -66,6 +66,12 @@ const App: React.FC = () => {
   const [newPollOptions, setNewPollOptions] = useState(['', '']);
   const [demoPaper, setDemoPaper] = useState<DemoPaper | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{
+    show: boolean;
+    x: number;
+    y: number;
+    selectedText: string;
+  }>({ show: false, x: 0, y: 0, selectedText: '' });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -207,6 +213,65 @@ Future work will explore:
       setMessages(prev => [...prev, welcomeMessage]);
     }, 2000);
   };
+
+  // Handle context menu
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    const selection = window.getSelection();
+    const selectedText = selection?.toString().trim();
+    
+    if (selectedText && selectedText.length > 0) {
+      setContextMenu({
+        show: true,
+        x: e.clientX,
+        y: e.clientY,
+        selectedText: selectedText
+      });
+    }
+  };
+
+  const handleContextMenuAction = (action: 'snippet' | 'explain') => {
+    if (action === 'snippet') {
+      setSelectedText(contextMenu.selectedText);
+      setShowSnippetModal(true);
+    } else if (action === 'explain') {
+      const explanationMessage: Message = {
+        id: Date.now().toString(),
+        text: `Please explain: "${contextMenu.selectedText}"`,
+        isUser: true,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, explanationMessage]);
+      
+      // Simulate AI explanation
+      setTimeout(() => {
+        const aiExplanation: Message = {
+          id: (Date.now() + 1).toString(),
+          text: `**Explanation of "${contextMenu.selectedText.substring(0, 50)}..."**\n\nThis concept refers to ${contextMenu.selectedText.toLowerCase().includes('neural') ? 'neural network architectures and their optimization techniques' : contextMenu.selectedText.toLowerCase().includes('quantization') ? 'the process of reducing numerical precision in machine learning models' : contextMenu.selectedText.toLowerCase().includes('pruning') ? 'the technique of removing unnecessary connections in neural networks' : 'an important research concept'}. In the context of this paper, it relates to improving model efficiency while maintaining accuracy.\n\nWould you like me to elaborate on any specific aspect?`,
+          isUser: false,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, aiExplanation]);
+      }, 1000);
+    }
+    
+    setContextMenu({ show: false, x: 0, y: 0, selectedText: '' });
+  };
+
+  // Close context menu when clicking elsewhere
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setContextMenu({ show: false, x: 0, y: 0, selectedText: '' });
+    };
+    
+    if (contextMenu.show) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [contextMenu.show]);
+
   // Handle sending messages
   const handleSendMessage = (text: string) => {
     if (!text.trim()) return;
@@ -538,21 +603,12 @@ This research enables deployment of sophisticated AI models on edge devices, ope
                   <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8 max-w-4xl mx-auto">
                     <div 
                       className="prose prose-slate max-w-none"
-                      onMouseUp={() => {
-                        const selection = window.getSelection();
-                        const selectedText = selection?.toString().trim();
-                        if (selectedText && selectedText.length > 10) {
-                          setSelectedText(selectedText);
-                          // Show tooltip or modal for snippet creation
-                          if (window.confirm(`Save "${selectedText.substring(0, 50)}..." as a snippet?`)) {
-                            setShowSnippetModal(true);
-                          }
-                        }
-                      }}
+                      onContextMenu={handleContextMenu}
                       style={{ 
                         lineHeight: '1.8',
                         fontSize: '16px',
-                        fontFamily: 'Georgia, serif'
+                        fontFamily: 'Georgia, serif',
+                        userSelect: 'text'
                       }}
                     >
                       <div dangerouslySetInnerHTML={{ 
@@ -884,6 +940,33 @@ This research enables deployment of sophisticated AI models on edge devices, ope
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Context Menu */}
+      {contextMenu.show && (
+        <div 
+          className="fixed bg-white border border-slate-200 rounded-lg shadow-lg py-2 z-50"
+          style={{ 
+            left: contextMenu.x, 
+            top: contextMenu.y,
+            minWidth: '160px'
+          }}
+        >
+          <button
+            onClick={() => handleContextMenuAction('snippet')}
+            className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 flex items-center space-x-2"
+          >
+            <FileDown className="w-4 h-4" />
+            <span>Save as Snippet</span>
+          </button>
+          <button
+            onClick={() => handleContextMenuAction('explain')}
+            className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 flex items-center space-x-2"
+          >
+            <Bot className="w-4 h-4" />
+            <span>Explain this</span>
+          </button>
         </div>
       )}
 
