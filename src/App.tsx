@@ -6,6 +6,32 @@ interface Message {
   text: string;
   isUser: boolean;
   timestamp: Date;
+  isSnippet?: boolean;
+  snippetTitle?: string;
+}
+
+interface Snippet {
+  id: string;
+  title: string;
+  content: string;
+  timestamp: Date;
+  tags: string[];
+  source: string;
+}
+
+interface PollOption {
+  id: string;
+  text: string;
+  votes: number;
+}
+
+interface Poll {
+  id: string;
+  question: string;
+  options: PollOption[];
+  totalVotes: number;
+  isActive: boolean;
+  timestamp: Date;
 }
 
 interface SidebarItem {
@@ -30,13 +56,20 @@ const App: React.FC = () => {
   const [selectedText, setSelectedText] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [activeView, setActiveView] = useState('pdf');
+  const [snippets, setSnippets] = useState<Snippet[]>([]);
+  const [polls, setPolls] = useState<Poll[]>([]);
+  const [newSnippetTitle, setNewSnippetTitle] = useState('');
+  const [showCreatePoll, setShowCreatePoll] = useState(false);
+  const [newPollQuestion, setNewPollQuestion] = useState('');
+  const [newPollOptions, setNewPollOptions] = useState(['', '']);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const sidebarItems: SidebarItem[] = [
-    { id: 'pdf', name: 'PDF', icon: <FileText className="w-5 h-5" />, active: true },
+    { id: 'pdf', name: 'PDF', icon: <FileText className="w-5 h-5" />, active: activeView === 'pdf' },
     { id: 'summary', name: 'Summary', icon: <BookOpen className="w-5 h-5" />, active: showSummary },
-    { id: 'snippets', name: 'Snippets', icon: <MessageSquare className="w-5 h-5" /> },
-    { id: 'poll', name: 'Poll', icon: <Users className="w-5 h-5" /> },
+    { id: 'snippets', name: 'Snippets', icon: <MessageSquare className="w-5 h-5" />, active: activeView === 'snippets' },
+    { id: 'poll', name: 'Poll', icon: <Users className="w-5 h-5" />, active: activeView === 'poll' },
     { id: 'share', name: 'Share', icon: <Share2 className="w-5 h-5" /> }
   ];
 
@@ -131,6 +164,7 @@ Extension to distributed training environments and meta-learning applications fo
 
   const handleSummaryClick = () => {
     setShowSummary(!showSummary);
+    setActiveView('pdf');
     if (!showSummary) {
       const summaryMessage: Message = {
         id: Date.now().toString(),
@@ -139,6 +173,124 @@ Extension to distributed training environments and meta-learning applications fo
         timestamp: new Date()
       };
       setMessages(prev => [...prev, summaryMessage]);
+    }
+  };
+
+  const handleSidebarClick = (itemId: string) => {
+    if (itemId === 'summary') {
+      handleSummaryClick();
+    } else if (itemId === 'snippets') {
+      setActiveView('snippets');
+      setShowSummary(false);
+    } else if (itemId === 'poll') {
+      setActiveView('poll');
+      setShowSummary(false);
+    } else if (itemId === 'pdf') {
+      setActiveView('pdf');
+      setShowSummary(false);
+    } else if (itemId === 'share') {
+      handleShare();
+    }
+  };
+
+  const handleShare = () => {
+    const shareData = {
+      title: 'Research Copilot Session',
+      text: 'Check out this research paper analysis',
+      url: window.location.href
+    };
+    
+    if (navigator.share) {
+      navigator.share(shareData);
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      alert('Link copied to clipboard!');
+    }
+  };
+
+  const handleCreateSnippet = () => {
+    if (selectedText && newSnippetTitle) {
+      const newSnippet: Snippet = {
+        id: Date.now().toString(),
+        title: newSnippetTitle,
+        content: selectedText,
+        timestamp: new Date(),
+        tags: ['research', 'important'],
+        source: 'Current Paper'
+      };
+      
+      setSnippets(prev => [...prev, newSnippet]);
+      setSelectedText('');
+      setNewSnippetTitle('');
+      
+      // Add snippet to chat as well
+      const snippetMessage: Message = {
+        id: Date.now().toString(),
+        text: `📝 **Snippet Created: ${newSnippet.title}**\n\n"${newSnippet.content}"\n\n*Saved to your snippets collection*`,
+        isUser: false,
+        timestamp: new Date(),
+        isSnippet: true,
+        snippetTitle: newSnippet.title
+      };
+      setMessages(prev => [...prev, snippetMessage]);
+    }
+  };
+
+  const handleCreatePoll = () => {
+    if (newPollQuestion && newPollOptions.every(opt => opt.trim())) {
+      const newPoll: Poll = {
+        id: Date.now().toString(),
+        question: newPollQuestion,
+        options: newPollOptions.map((text, index) => ({
+          id: `option-${index}`,
+          text,
+          votes: 0
+        })),
+        totalVotes: 0,
+        isActive: true,
+        timestamp: new Date()
+      };
+      
+      setPolls(prev => [...prev, newPoll]);
+      setNewPollQuestion('');
+      setNewPollOptions(['', '']);
+      setShowCreatePoll(false);
+      
+      // Add poll to chat
+      const pollMessage: Message = {
+        id: Date.now().toString(),
+        text: `🗳️ **New Poll Created**\n\n**${newPoll.question}**\n\n${newPoll.options.map((opt, i) => `${i + 1}. ${opt.text}`).join('\n')}\n\n*Poll is now active for voting*`,
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, pollMessage]);
+    }
+  };
+
+  const handleVote = (pollId: string, optionId: string) => {
+    setPolls(prev => prev.map(poll => {
+      if (poll.id === pollId) {
+        return {
+          ...poll,
+          options: poll.options.map(option => 
+            option.id === optionId 
+              ? { ...option, votes: option.votes + 1 }
+              : option
+          ),
+          totalVotes: poll.totalVotes + 1
+        };
+      }
+      return poll;
+    }));
+  };
+
+  const addPollOption = () => {
+    setNewPollOptions(prev => [...prev, '']);
+  };
+
+  const removePollOption = (index: number) => {
+    if (newPollOptions.length > 2) {
+      setNewPollOptions(prev => prev.filter((_, i) => i !== index));
     }
   };
 
@@ -250,7 +402,7 @@ Extension to distributed training environments and meta-learning applications fo
             {sidebarItems.map((item) => (
               <button
                 key={item.id}
-                onClick={item.id === 'summary' ? handleSummaryClick : undefined}
+                onClick={() => handleSidebarClick(item.id)}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                   item.active 
                     ? 'bg-purple-600 text-white' 
@@ -266,8 +418,270 @@ Extension to distributed training environments and meta-learning applications fo
 
         {/* Main Content */}
         <div className="flex-1 flex">
-          {/* Document Viewer */}
-          <div className="flex-1 bg-slate-50 p-6 overflow-y-auto">
+          {/* Content Area */}
+          <div className="flex-1 bg-slate-50 overflow-hidden">
+            {activeView === 'pdf' && (
+              <div className="h-full p-6 overflow-y-auto">
+                <div className="max-w-4xl mx-auto">
+                  <div className="bg-white rounded-lg shadow-lg p-8">
+                    <h2 className="text-2xl font-bold text-slate-800 mb-6">Research Content</h2>
+                    <div 
+                      className="prose prose-slate max-w-none text-slate-700 leading-relaxed"
+                      onMouseUp={handleTextSelection}
+                    >
+                      {samplePaperContent.split('\n').map((paragraph, index) => (
+                        <p key={index} className="mb-4 text-sm leading-6">
+                          {paragraph.trim()}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeView === 'snippets' && (
+              <div className="h-full p-6 overflow-y-auto">
+                <div className="max-w-4xl mx-auto">
+                  <div className="bg-white rounded-lg shadow-lg p-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-slate-800">Research Snippets</h2>
+                      <div className="text-sm text-slate-500">
+                        {snippets.length} snippet{snippets.length !== 1 ? 's' : ''} saved
+                      </div>
+                    </div>
+                    
+                    {selectedText && (
+                      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <h3 className="font-semibold text-slate-800 mb-2">Create Snippet from Selection</h3>
+                        <div className="mb-3 p-3 bg-white border rounded text-sm text-slate-600">
+                          "{selectedText}"
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="text"
+                            placeholder="Enter snippet title..."
+                            value={newSnippetTitle}
+                            onChange={(e) => setNewSnippetTitle(e.target.value)}
+                            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          />
+                          <button
+                            onClick={handleCreateSnippet}
+                            disabled={!newSnippetTitle.trim()}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                          >
+                            Save Snippet
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      {snippets.length === 0 ? (
+                        <div className="text-center py-12 text-slate-500">
+                          <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                          <p>No snippets saved yet</p>
+                          <p className="text-sm">Highlight text in the PDF to create your first snippet</p>
+                        </div>
+                      ) : (
+                        snippets.map((snippet) => (
+                          <div key={snippet.id} className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                            <div className="flex items-start justify-between mb-2">
+                              <h3 className="font-semibold text-slate-800">{snippet.title}</h3>
+                              <span className="text-xs text-slate-500">
+                                {snippet.timestamp.toLocaleDateString()}
+                              </span>
+                            </div>
+                            <p className="text-slate-600 text-sm mb-3 italic">"{snippet.content}"</p>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                {snippet.tags.map((tag) => (
+                                  <span key={tag} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                              <span className="text-xs text-slate-500">{snippet.source}</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeView === 'poll' && (
+              <div className="h-full p-6 overflow-y-auto">
+                <div className="max-w-4xl mx-auto">
+                  <div className="bg-white rounded-lg shadow-lg p-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-slate-800">Research Polls</h2>
+                      <button
+                        onClick={() => setShowCreatePoll(true)}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                      >
+                        Create Poll
+                      </button>
+                    </div>
+
+                    {showCreatePoll && (
+                      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <h3 className="font-semibold text-slate-800 mb-4">Create New Poll</h3>
+                        <div className="space-y-4">
+                          <input
+                            type="text"
+                            placeholder="Enter poll question..."
+                            value={newPollQuestion}
+                            onChange={(e) => setNewPollQuestion(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          />
+                          
+                          <div className="space-y-2">
+                            <label className="block text-sm font-medium text-slate-700">Options:</label>
+                            {newPollOptions.map((option, index) => (
+                              <div key={index} className="flex items-center space-x-2">
+                                <input
+                                  type="text"
+                                  placeholder={`Option ${index + 1}...`}
+                                  value={option}
+                                  onChange={(e) => {
+                                    const newOptions = [...newPollOptions];
+                                    newOptions[index] = e.target.value;
+                                    setNewPollOptions(newOptions);
+                                  }}
+                                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                />
+                                {newPollOptions.length > 2 && (
+                                  <button
+                                    onClick={() => removePollOption(index)}
+                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                            <button
+                              onClick={addPollOption}
+                              className="text-sm text-purple-600 hover:text-purple-700 transition-colors"
+                            >
+                              + Add Option
+                            </button>
+                          </div>
+                          
+                          <div className="flex items-center space-x-3">
+                            <button
+                              onClick={handleCreatePoll}
+                              disabled={!newPollQuestion.trim() || !newPollOptions.every(opt => opt.trim())}
+                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                            >
+                              Create Poll
+                            </button>
+                            <button
+                              onClick={() => setShowCreatePoll(false)}
+                              className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-6">
+                      {polls.length === 0 ? (
+                        <div className="text-center py-12 text-slate-500">
+                          <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                          <p>No polls created yet</p>
+                          <p className="text-sm">Create a poll to gather opinions on research topics</p>
+                        </div>
+                      ) : (
+                        polls.map((poll) => (
+                          <div key={poll.id} className="border border-slate-200 rounded-lg p-6">
+                            <div className="flex items-start justify-between mb-4">
+                              <h3 className="font-semibold text-slate-800 text-lg">{poll.question}</h3>
+                              <div className="flex items-center space-x-2">
+                                <span className={`px-2 py-1 text-xs rounded-full ${
+                                  poll.isActive 
+                                    ? 'bg-green-100 text-green-700' 
+                                    : 'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {poll.isActive ? 'Active' : 'Closed'}
+                                </span>
+                                <span className="text-xs text-slate-500">
+                                  {poll.totalVotes} vote{poll.totalVotes !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-3">
+                              {poll.options.map((option) => {
+                                const percentage = poll.totalVotes > 0 ? (option.votes / poll.totalVotes) * 100 : 0;
+                                return (
+                                  <div key={option.id} className="relative">
+                                    <button
+                                      onClick={() => handleVote(poll.id, option.id)}
+                                      disabled={!poll.isActive}
+                                      className="w-full text-left p-3 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-slate-700">{option.text}</span>
+                                        <span className="text-sm text-slate-500">
+                                          {option.votes} ({percentage.toFixed(1)}%)
+                                        </span>
+                                      </div>
+                                      <div className="mt-2 w-full bg-slate-200 rounded-full h-2">
+                                        <div 
+                                          className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                                          style={{ width: `${percentage}%` }}
+                                        />
+                                      </div>
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            
+                            <div className="mt-4 text-xs text-slate-500">
+                              Created {poll.timestamp.toLocaleDateString()} at {poll.timestamp.toLocaleTimeString()}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Text Selection Tooltip */}
+            {selectedText && activeView === 'pdf' && (
+              <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-purple-600 text-white px-4 py-2 rounded-full shadow-lg z-50">
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={handleExplainSelection}
+                    className="flex items-center space-x-2 hover:bg-purple-700 px-3 py-1 rounded-full transition-colors"
+                  >
+                    <Bot className="w-4 h-4" />
+                    <span>Explain</span>
+                  </button>
+                  <div className="w-px h-4 bg-purple-400" />
+                  <button
+                    onClick={() => setActiveView('snippets')}
+                    className="flex items-center space-x-2 hover:bg-purple-700 px-3 py-1 rounded-full transition-colors"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Save Snippet</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Remove the old document viewer section */}
+          <div className="max-w-4xl mx-auto">
             <div className="max-w-4xl mx-auto">
               <div className="bg-white rounded-lg shadow-lg p-8">
                 <h2 className="text-2xl font-bold text-slate-800 mb-6">Research Content</h2>
@@ -366,31 +780,8 @@ Extension to distributed training environments and meta-learning applications fo
                   placeholder="Ask me anything about the research paper..."
                   className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-800 placeholder-slate-500"
                 />
-                <button
-                  onClick={() => handleSendMessage(inputText)}
-                  disabled={!inputText.trim()}
-                  className="p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="flex items-center justify-between mt-3">
-                <button className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 transition-colors">
-                  Slow
-                </button>
-                <button 
-                  onClick={handleSummaryClick}
-                  className="px-3 py-1 text-xs bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300 transition-colors"
-                >
-                  📋 Summary
-                </button>
-                <button className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors">
-                  Sophew
-                </button>
-              </div>
+              {/* This section will be removed */}
             </div>
-          </div>
-        </div>
       </div>
 
       {/* Mobile Sidebar Overlay */}
