@@ -29,11 +29,12 @@ const App: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const sidebarItems: SidebarItem[] = [
     { id: 'pdf', name: 'PDF', icon: <FileText className="w-5 h-5" />, active: true },
-    { id: 'summary', name: 'Summary', icon: <BookOpen className="w-5 h-5" /> },
+    { id: 'summary', name: 'Summary', icon: <BookOpen className="w-5 h-5" />, active: showSummary },
     { id: 'snippets', name: 'Snippets', icon: <MessageSquare className="w-5 h-5" /> },
     { id: 'poll', name: 'Poll', icon: <Users className="w-5 h-5" /> },
     { id: 'share', name: 'Share', icon: <Share2 className="w-5 h-5" /> }
@@ -95,6 +96,50 @@ const App: React.FC = () => {
     }
     
     return 'I understand you\'re looking for help with your research. I can assist with explaining equations, defining technical terms, providing summaries, and breaking down complex concepts. Feel free to highlight any text from your paper or ask me specific questions about the content you\'re reading.';
+  };
+
+  const generatePaperSummary = (): string => {
+    return `**📋 Paper Summary: Adaptive Gradient Descent Optimization**
+
+**🎯 Main Contribution:**
+This paper introduces a novel machine learning optimization algorithm that combines momentum-based optimization with dynamic learning rate adjustment, achieving faster convergence on complex datasets.
+
+**🔍 Key Problem Addressed:**
+Traditional gradient descent methods struggle with convergence in high-dimensional spaces and non-convex loss landscapes, often requiring manual hyperparameter tuning.
+
+**💡 Proposed Solution:**
+• **Adaptive Learning Rate Scheduling**: Dynamic adjustment based on gradient variance analysis
+• **Momentum Adaptation**: Coefficient adapts based on gradient direction consistency
+• **Automatic Hyperparameter Tuning**: Reduces need for manual parameter adjustment
+
+**📊 Key Results:**
+• CIFAR-10: 50% faster convergence (75 vs 150 epochs compared to SGD)
+• ImageNet: 50% improvement (150 vs 300 epochs)
+• Penn Treebank: 44% faster (45 vs 80 epochs)
+
+**🔬 Methodology:**
+The algorithm monitors gradient statistics in real-time and adjusts learning rates using the formula: α(t) = α₀ × (1 + β₁ × var(g(t))) / (1 + β₂ × ||g(t)||²)
+
+**🚀 Impact & Applications:**
+• Most effective during early training stages when exploring parameter space
+• Automatically reduces learning rate as model converges for fine-tuning
+• Applicable to distributed training and meta-learning scenarios
+
+**🔮 Future Directions:**
+Extension to distributed training environments and meta-learning applications for improved efficiency in machine learning systems.`;
+  };
+
+  const handleSummaryClick = () => {
+    setShowSummary(!showSummary);
+    if (!showSummary) {
+      const summaryMessage: Message = {
+        id: Date.now().toString(),
+        text: generatePaperSummary(),
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, summaryMessage]);
+    }
   };
 
   const handleTextSelection = () => {
@@ -205,6 +250,7 @@ const App: React.FC = () => {
             {sidebarItems.map((item) => (
               <button
                 key={item.id}
+                onClick={item.id === 'summary' ? handleSummaryClick : undefined}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                   item.active 
                     ? 'bg-purple-600 text-white' 
@@ -276,7 +322,21 @@ const App: React.FC = () => {
                       ? 'bg-purple-600 text-white' 
                       : 'bg-white text-slate-800 shadow-sm border border-slate-200'
                   }`}>
-                    <p className="text-sm">{message.text}</p>
+                    <div className="text-sm">
+                      {message.text.includes('**') ? (
+                        <div 
+                          className="prose prose-sm max-w-none"
+                          dangerouslySetInnerHTML={{
+                            __html: message.text
+                              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                              .replace(/•/g, '•')
+                              .replace(/\n/g, '<br/>')
+                          }}
+                        />
+                      ) : (
+                        <p>{message.text}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -317,6 +377,12 @@ const App: React.FC = () => {
               <div className="flex items-center justify-between mt-3">
                 <button className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 transition-colors">
                   Slow
+                </button>
+                <button 
+                  onClick={handleSummaryClick}
+                  className="px-3 py-1 text-xs bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300 transition-colors"
+                >
+                  📋 Summary
                 </button>
                 <button className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors">
                   Sophew
