@@ -2,6 +2,7 @@
   "name": "vite-react-typescript-starter",
   "private": true,
   "version": "0.0.0",
+  "homepage": "https://tallsong.github.io/research-copilot",
   "type": "module",
   "scripts": {
     "dev": "vite",
